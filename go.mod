@@ -1,6 +1,6 @@
 module github.com/apache/casbin-mongodb-adapter/v4
 
-go 1.20
+go 1.24
 
 require (
 	github.com/casbin/casbin/v3 v3.10.0
@@ -12,7 +12,7 @@ require (
 	github.com/casbin/govaluate v1.3.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
