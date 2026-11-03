@@ -100,6 +100,46 @@ func main() {
 }
 ```
 
+## Client ownership
+
+`NewAdapterByDB` borrows the supplied `*mongo.Client` by default, including when
+its configuration is nil. Adapter cleanup leaves that client open. The
+application must call `client.Disconnect(ctx)` at shutdown, after all users of
+that client have finished.
+
+```go
+// Reuse the application's existing client without transferring ownership.
+a, err := mongodbadapter.NewAdapterByDB(client, &mongodbadapter.AdapterConfig{
+    DatabaseName:   "my_app",
+    CollectionName: "casbin_rule",
+})
+if err != nil {
+    return err
+}
+// Use a with Casbin; the application still owns client.
+```
+
+Set `OwnsClient: true` to explicitly transfer ownership to the adapter. Its
+finalizer may then disconnect the client once the adapter is no longer reachable;
+use this only when other application components no longer need that client.
+
+```go
+a, err := mongodbadapter.NewAdapterByDB(client, &mongodbadapter.AdapterConfig{
+    DatabaseName:   "my_app",
+    CollectionName: "casbin_rule",
+    OwnsClient:     true,
+})
+if err != nil {
+    return err
+}
+// The adapter now owns client.
+```
+
+This intentionally changes the previous `NewAdapterByDB` behavior, which could
+close an application-provided client during adapter cleanup. Constructors that
+create their own client retain their existing cleanup behavior. Finalizers do
+not guarantee prompt cleanup or execution before process exit.
+
 ## Filtered Policies
 
 ```go

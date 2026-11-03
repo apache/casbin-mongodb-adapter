@@ -49,6 +49,7 @@ type CasbinRule struct {
 // adapter represents the MongoDB adapter for policy storage.
 type adapter struct {
 	client     *mongo.Client
+	ownsClient bool
 	collection *mongo.Collection
 	timeout    time.Duration
 	filtered   bool
@@ -141,8 +142,13 @@ type AdapterConfig struct {
 	CollectionName string
 	Timeout        time.Duration
 	IsFiltered     bool
+	// OwnsClient makes the adapter responsible for disconnecting the client.
+	// The default is false: the caller retains ownership of the client.
+	OwnsClient bool
 }
 
+// NewAdapterByDB creates an adapter using an existing client.
+// A nil config or a false OwnsClient leaves client cleanup to the caller.
 func NewAdapterByDB(client *mongo.Client, config *AdapterConfig) (persist.BatchAdapter, error) {
 	if config == nil {
 		config = &AdapterConfig{}
@@ -161,6 +167,7 @@ func NewAdapterByDB(client *mongo.Client, config *AdapterConfig) (persist.BatchA
 
 	a := &adapter{
 		client:     client,
+		ownsClient: config.OwnsClient,
 		collection: collection,
 		timeout:    config.Timeout,
 		filtered:   config.IsFiltered,
@@ -186,6 +193,7 @@ func (a *adapter) open(clientOption *options.ClientOptions, databaseName string,
 	collection := db.Collection(collectionName)
 
 	a.client = client
+	a.ownsClient = true
 	a.collection = collection
 
 	if err = a.prepareIndexes(); err != nil {
@@ -220,6 +228,10 @@ func (a *adapter) prepareIndexes() error {
 }
 
 func (a *adapter) close() {
+	if !a.ownsClient {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.TODO(), a.timeout)
 	defer cancel()
 
