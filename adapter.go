@@ -143,6 +143,8 @@ type AdapterConfig struct {
 	IsFiltered     bool
 }
 
+// NewAdapterByDB creates an adapter using an existing client. The client stays
+// owned by the caller and is never disconnected by the adapter.
 func NewAdapterByDB(client *mongo.Client, config *AdapterConfig) (persist.BatchAdapter, error) {
 	if config == nil {
 		config = &AdapterConfig{}
@@ -170,9 +172,6 @@ func NewAdapterByDB(client *mongo.Client, config *AdapterConfig) (persist.BatchA
 		return nil, err
 	}
 
-	// Call the destructor when the object is released.
-	runtime.SetFinalizer(a, finalizer)
-
 	return a, nil
 }
 
@@ -189,6 +188,7 @@ func (a *adapter) open(clientOption *options.ClientOptions, databaseName string,
 	a.collection = collection
 
 	if err = a.prepareIndexes(); err != nil {
+		a.close()
 		return err
 	}
 
