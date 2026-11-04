@@ -10,9 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # MongoDB 8.0 refuses to start on the runner's Linux kernel (6.19+),
+    # see https://jira.mongodb.org/browse/SERVER-121912.
     services:
       mongodb:
-        image: mongo:8.0
+        image: mongo:7.0
         ports:
           - 27017:27017
 
@@ -31,7 +33,7 @@ jobs:
       - name: Start MongoDB replica set
         run: |
           set -euo pipefail
-          docker run -d --name mongo-rs -p 42069:42069 mongo:8.0 \
+          docker run -d --name mongo-rs -p 42069:42069 mongo:7.0 \
             mongod --replSet test-rs --port 42069 --bind_ip_all
 
           echo "Waiting for mongod to accept connections..."
